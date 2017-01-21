@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <!--<me.mgottein.LineNumberEditText
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:ems="10"
+        android:padding="5dp"
+        android:text="@string/greeting_text"
+        android:id="@+id/codeEditor"
+        android:typeface="monospace"
+
+        android:textSize="16.5dp"
+        android:gravity="top|left"
+        android:inputType="textAutoComplete|textMultiLine"/>-->
+    <me.mgottein.LineNumberEditText
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:typeface="monospace"
+        android:id="@+id/code_editor"
+        android:textSize="16.5dp"
+        android:layout_margin="5dp"
+        android:gravity="top|left"/>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/compile_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/ic_frege"
+        android:scaleX="1.1"
+        android:scaleY="1.1"
+        android:layout_marginRight="30dp"
+        android:layout_marginBottom="30dp"
+        android:clickable="true"
+        android:contextClickable="false"/>
+</RelativeLayout>

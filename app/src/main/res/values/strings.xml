@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Try Frege</string>
+    <string name="greeting_text">Welcome! Enter Frege code snippets at the prompt to get them evaluated.\nType \":help\" for more information.\nfrege> </string>
+</resources>

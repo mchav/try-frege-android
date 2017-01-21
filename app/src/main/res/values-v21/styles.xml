@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="TryFregeTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="android:navigationBarColor">@color/primary_material_dark_1</item>
+        <item name="android:statusBarColor">@color/primary_material_dark_1</item>
+        <item name="colorPrimary">@color/primary_material_dark_1</item>
+        <item name="android:colorBackground">@android:color/background_dark</item>
+        <item name="android:textColorPrimary">@android:color/darker_gray</item>
+        <item name="colorAccent">@color/primary_material_dark_1</item>
+    </style>
+</resources>

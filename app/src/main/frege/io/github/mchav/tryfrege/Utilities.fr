@@ -1,0 +1,90 @@
+module io.github.mchav.tryfrege.Utilities where
+
+import Control.Concurrent
+import Java.Util
+
+import froid.Types
+
+-- resources
+
+pure native tryFregePagerId "io.github.mchav.tryfrege.R.id.try_frege_pager" :: Int
+pure native tryFregeLogo "io.github.mchav.tryfrege.R.mipmap.ic_launcher" :: Int
+pure native activityMain "io.github.mchav.tryfrege.R.layout.activity_main" :: Int
+pure native fragmentConsole "io.github.mchav.tryfrege.R.layout.fragment_console" :: Int
+pure native console "io.github.mchav.tryfrege.R.id.console" :: Int
+pure native evalButton "io.github.mchav.tryfrege.R.id.eval" :: Int
+pure native inputId "io.github.mchav.tryfrege.R.id.console_input" :: Int
+pure native compileFab "io.github.mchav.tryfrege.R.id.compile_fab" :: Int
+pure native codeEditor "io.github.mchav.tryfrege.R.id.code_editor" :: Int
+pure native scrollerId "io.github.mchav.tryfrege.R.id.scroller" :: Int
+pure native fragmentEditor "io.github.mchav.tryfrege.R.layout.fragment_editor" :: Int
+
+-- xml parser interface
+
+data DocumentBuilderFactory = native javax.xml.parsers.DocumentBuilderFactory where
+        native newInstance "javax.xml.parsers.DocumentBuilderFactory.newInstance" :: () -> STMutable RealWorld DocumentBuilderFactory
+        native newDocumentBuilder :: MutableIO DocumentBuilderFactory -> IOMutable DocumentBuilder throws ParserConfigurationException
+
+data DocumentBuilder = native javax.xml.parsers.DocumentBuilder where
+    native parse :: MutableIO DocumentBuilder -> InputStream -> IOMutable Document throws Exception
+
+data Document = native org.w3c.dom.Document where
+    native getDocumentElement :: MutableIO Document -> IOMutable Element
+    native getElementsByTagName :: MutableIO Document -> String -> IOMutable NodeList
+
+data NodeList = native org.w3c.dom.NodeList where
+    native getLength :: MutableIO NodeList -> IO Int
+    native item :: MutableIO NodeList -> Int -> IO (Maybe (MutableIO Node))
+
+data Element = native org.w3c.dom.Element where
+    native normalize :: MutableIO Element -> IO ()
+    native getNodeName :: MutableIO Element -> IO String
+    native getAttribute :: MutableIO Element -> String -> IO String
+    native getElementsByTagName :: MutableIO Element -> String -> IOMutable NodeList
+    fromNode :: MutableIO Node -> IOMutable Element
+    fromNode n = castToElement n
+
+native castToElement "(org.w3c.dom.Element)" :: MutableIO Node -> IOMutable Element
+
+data Node = native org.w3c.dom.Node where
+    native elementNode "org.w3c.dom.Node.ELEMENT_NODE" :: Int
+    native getTextContent :: MutableIO Node -> IO String
+
+native toHttpURLConnection "(java.net.HttpURLConnection)" :: MutableIO URLConnection -> IO (ClassCastException | MutableIO HttpURLConnection)
+
+data ParserConfigurationException = native javax.xml.parsers.ParserConfigurationException
+
+data SAXException = native org.xml.sax.SAXException
+
+data ProtocolException = native java.net.ProtocolException
+data MalformedURLException = native java.net.MalformedURLException
+
+-- java.net interface
+
+data URL = native java.net.URL where
+    native new              :: String -> STMutable RealWorld URL throws MalformedURLException
+    native openConnection   :: MutableIO URL -> IOMutable URLConnection throws IOException
+
+data URLConnection = native java.net.URLConnection
+
+data HttpURLConnection = native java.net.HttpURLConnection where
+    native setRequestMethod :: MutableIO HttpURLConnection -> String -> IO () throws ProtocolException
+    native setRequestProperty :: MutableIO HttpURLConnection -> String -> String -> IO ()
+    native setDoOutput :: MutableIO HttpURLConnection -> Bool -> IO ()
+    native getOutputStream :: MutableIO HttpURLConnection -> IO OutputStream throws IOException
+    native getInputStream :: MutableIO HttpURLConnection -> IO InputStream throws IOException
+    native getResponseCode :: MutableIO HttpURLConnection -> IO Int throws IOException
+    native getHeaderField :: MutableIO HttpURLConnection -> Int -> IO String
+    native getHeaderFields :: MutableIO HttpURLConnection -> IOMutable (Map String (Mutable s (List String)))
+    native disconnect :: MutableIO HttpURLConnection -> IO ()
+
+data URLEncoder = native java.net.URLEncoder where
+    native encode "java.net.URLEncoder.encode" :: String -> String -> IO String throws UnsupportedEncodingException
+
+-- helpers
+
+readMVar :: MVar a -> IO a
+readMVar var = do
+    val <- takeMVar var
+    putMVar var val
+    return val

@@ -1,0 +1,54 @@
+module io.github.mchav.tryfrege.ConsoleFragment where
+
+import froid.graphics.Typeface
+import froid.os.Bundle
+import froid.support.v4.app.Fragment
+import froid.util.Log
+import froid.view.LayoutInflater
+import froid.view.View
+import froid.view.ViewGroup
+import froid.widget.EditText
+import froid.widget.ScrollView
+import froid.widget.TextView
+
+import Control.Concurrent
+
+import io.github.mchav.tryfrege.Net
+import io.github.mchav.tryfrege.Utilities
+
+newConsoleFragment :: MVar String -> STMutable RealWorld Fragment
+newConsoleFragment sessionId = do
+    let delegator = defaultFragmentDelegator.{ onCreateView = Just (onCreateView sessionId) }
+    mkFragment delegator
+
+onCreateView :: MVar String -> MutableIO Fragment -> MutableIO LayoutInflater ->
+                MutableIO ViewGroup -> Maybe (MutableIO Bundle) -> IO (MutableIO View)
+onCreateView sessionId this inf vg b = do
+    v <- inf.inflate fragmentConsole vg False
+    txtConsole <- asTextView v.findViewById console
+    scroller <- asScrollView v.findViewById scrollerId
+    scrollDown <- Runnable.new (scroller.fullScroll View.focusDown)
+    scroller.post scrollDown
+    inputText <- asEditText v.findViewById inputId
+    eval <- v.findViewById evalButton
+    setViewOnClick eval (\_ -> evaluateInput sessionId inputText txtConsole this)
+    context <- this.getContext
+    assetManager <- context.getAssets
+    terminalFont <- Typeface.createFromAsset assetManager "fonts/TerminusTTF.ttf"
+    txtConsole.setTypeface terminalFont
+    return v
+
+evaluateInput :: MVar String -> MutableIO EditText ->
+                 MutableIO TextView -> MutableIO Fragment -> IO ()
+evaluateInput sessionId input console this = do
+    test <- liftM (CharSequence.toString) (input.getText)
+    sid <- readMVar sessionId
+    expr <- liftM (CharSequence.toString) (input.getText)
+    console.append (expr ++ "\n")
+    result <- newEmptyMVar :: IO (MVar String)
+    forkIO (evaluateExpression expr sid >>= putMVar result)
+    res <- takeMVar result
+    activity <- this.getActivity
+    input.setText ""
+    update <- Runnable.new (console.append (res ++ "\nfrege> "))
+    activity.runOnUiThread update

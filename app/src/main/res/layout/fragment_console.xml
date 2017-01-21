@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:orientation="vertical"
+                  android:layout_above="@+id/console_input_bar"
+                  android:layout_width="fill_parent"
+                  android:layout_height="fill_parent">
+
+        <ScrollView
+            android:id="@+id/scroller"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="vertical"
+            android:fillViewport="true">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars = "vertical"
+                android:id="@+id/console"
+                android:textSize="18dp"
+                android:textColor="@android:color/darker_gray"
+                android:text="@string/greeting_text"
+                android:layout_marginTop="2dp"
+                />
+
+        </ScrollView>
+
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:id="@+id/console_input_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal">
+        <EditText
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:layout_weight="8"
+            android:hint="Enter an expression"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:typeface="monospace"
+            android:id="@+id/console_input"/>
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=">"
+            android:background="@drawable/shape"
+            android:id="@+id/eval"/>
+    </LinearLayout>
+
+</RelativeLayout>

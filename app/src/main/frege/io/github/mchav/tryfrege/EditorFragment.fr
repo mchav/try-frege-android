@@ -1,0 +1,40 @@
+module io.github.mchav.tryfrege.EditorFragment where
+
+import froid.os.Bundle
+import froid.support.v4.app.Fragment
+import froid.view.LayoutInflater
+import froid.view.View
+import froid.view.ViewGroup
+import froid.support.v4.view.ViewPager
+import froid.util.Log
+import froid.widget.LineNumberEditText
+import froid.widget.TextView
+
+import Control.Concurrent
+
+import io.github.mchav.tryfrege.Net
+import io.github.mchav.tryfrege.Utilities
+
+newEditorFragment :: MVar String -> MutableIO ViewPager -> STMutable RealWorld Fragment
+newEditorFragment sessionId viewPager = do
+    let delegator = defaultFragmentDelegator.{ onCreateView = Just (onCreateView sessionId viewPager) }
+    mkFragment delegator
+
+onCreateView :: MVar String -> MutableIO ViewPager -> MutableIO Fragment -> MutableIO LayoutInflater ->
+                MutableIO ViewGroup -> Maybe (MutableIO Bundle) -> IO (MutableIO View)
+onCreateView sessionId viewPager this inf vg b = do
+    v <- inf.inflate fragmentEditor vg False
+    otherView <- inf.inflate fragmentConsole vg False
+    editor <- asLineNumberEditText v.findViewById codeEditor
+    fab <- v.findViewById compileFab
+    setViewOnClick fab (\v -> evaluateInput sessionId viewPager editor )
+    return v
+
+evaluateInput :: MVar String -> MutableIO ViewPager -> MutableIO LineNumberEditText -> IO ()
+evaluateInput sessionId viewPager input = do
+    sid <- readMVar sessionId
+    expr <- liftM (CharSequence.toString) (input.getText)
+    result <- newEmptyMVar :: IO (MVar String)
+    forkIO (evaluateExpression expr sid >>= putMVar result)
+    res <- takeMVar result
+    viewPager.setCurrentItem 0

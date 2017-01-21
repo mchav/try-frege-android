@@ -1,0 +1,60 @@
+module io.github.mchav.tryfrege.Net where
+
+import froid.util.Log
+
+import io.github.mchav.tryfrege.Utilities
+
+getSessionID :: IO String
+getSessionID = do
+    let emptyReq = "http://try.frege-lang.org/eval?cmd=&stdin="
+    _ <- Log.i "TryFrege" emptyReq
+    url <- URL.new emptyReq
+    conn <- url.openConnection
+    client <- (toHttpURLConnection conn >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO HttpURLConnection)
+    client.setRequestMethod "GET"
+    client.setRequestProperty "Accept-Charset" "UTF-8"
+    client.setDoOutput True
+    code <- client.getResponseCode
+    fields <- client.getHeaderFields
+    Just vals <- fields.get "Set-Cookie"
+    Just sid <- vals.get 0
+    _ <- Log.i "TryFrege" "Got session id"
+    return (extractSession sid)
+
+extractSession :: String -> String
+extractSession s = s.substr ((s.indexOf "=" 0) + 1) (s.indexOf ";" 0)
+
+evaluateExpression :: String -> String -> IO String
+evaluateExpression exp sessionId = do
+    str <- (URLEncoder.encode exp "UTF-8")
+    let req = ("http://try.frege-lang.org/eval?cmd=" ++ str ++"&stdin=")
+    url <- URL.new req
+    conn <- url.openConnection
+    client <- (toHttpURLConnection conn >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO HttpURLConnection)
+    client.setRequestMethod "GET"
+    client.setRequestProperty "Accept-Charset" "UTF-8"
+    client.setRequestProperty "Cookie" ("JSESSIONID=" ++ sessionId)
+    client.setDoOutput True
+    is <- client.getInputStream
+    parseXmlResult is
+
+
+parseXmlResult :: InputStream -> IO String
+parseXmlResult is = do
+    dbFactory <- DocumentBuilderFactory.newInstance ()
+    dBuilder <- dbFactory.newDocumentBuilder
+    doc <- dBuilder.parse is
+    docElem <- doc.getDocumentElement
+    docElem.normalize
+    nList <- doc.getElementsByTagName "text"
+    res <- mapM (getNodeString nList) [0..10]
+    return (unlines res).trim
+
+getNodeString :: MutableIO NodeList -> Int -> IO String
+getNodeString nlist i = do
+    item <- nlist.item i
+    case item of
+        Just node -> liftM (String.trim) node.getTextContent
+        Nothing   -> return ""
+
+

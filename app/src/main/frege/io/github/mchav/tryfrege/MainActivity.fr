@@ -1,0 +1,62 @@
+module io.github.mchav.tryfrege.MainActivity where
+
+import froid.content.Context
+import froid.content.Intent
+import froid.support.v4.app.Fragment
+import froid.support.v4.app.FragmentManager
+import froid.support.v4.app.FragmentPagerAdapter
+import froid.support.v7.app.AppCompatActivity
+import froid.os.AsyncTask
+import froid.os.Bundle
+import froid.view.View
+import froid.widget.TextView
+import froid.support.v4.view.ViewPager
+
+import io.github.mchav.tryfrege.ConsoleFragment as C()
+import io.github.mchav.tryfrege.EditorFragment as E()
+import io.github.mchav.tryfrege.Net
+import io.github.mchav.tryfrege.Utilities
+
+import Control.Concurrent
+
+native module type AppCompatActivity where {}
+
+onCreate :: MutableIO AppCompatActivity -> Maybe (MutableIO Bundle) -> IO ()
+onCreate this bundle = do
+    this.setContentView activityMain
+    sessionId <- newEmptyMVar :: IO (MVar String)
+    forkIO (getSessionID >>= putMVar sessionId)
+    fm <- this.getSupportFragmentManager
+    actionBar <- this.getSupportActionBar
+    actionBar.setLogo tryFregeLogo
+    actionBar.setDisplayShowHomeEnabled True
+    actionBar.setDisplayUseLogoEnabled True
+    viewPager <- asViewPager this.findViewById tryFregePagerId
+    tfp <- newTryFregePager fm sessionId viewPager
+    viewPager.setAdapter tfp
+    viewPager.setCurrentItem 0
+
+onPostExecute :: MVar String -> String -> IO ()
+onPostExecute session res = do
+     putMVar session res
+
+newTryFregePager :: MutableIO FragmentManager ->  MVar String ->
+                    MutableIO ViewPager -> STMutable RealWorld FragmentPagerAdapter
+newTryFregePager fm sessionId viewPager = do
+    let delegator = FragmentPagerAdapterDelegator { getItem = Just (getItem sessionId viewPager), getCount = Just (\_ -> return 2), getPageTitle = Just (\_ -> getPageTitle) }
+    mkFragmentPagerAdapter delegator fm
+
+getItem :: MVar String -> MutableIO ViewPager -> MutableIO FragmentPagerAdapter -> Int -> IOMutable Fragment
+getItem sessionId viewPager this position =
+    case position of
+        0 -> (C.newConsoleFragment sessionId) >>= return
+        1 -> (E.newEditorFragment sessionId viewPager) >>= return
+
+getPageTitle :: Int -> IO CharSequence
+getPageTitle position =
+    case position of
+        0 -> return (CharSequence.fromString "Console")
+        1 -> return (CharSequence.fromString "Editor")
+
+-- async task
+
