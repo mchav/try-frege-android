@@ -31,24 +31,27 @@ onCreateView sessionId this inf vg b = do
     scroller.post scrollDown
     inputText <- asEditText v.findViewById inputId
     eval <- v.findViewById evalButton
-    setViewOnClick eval (\_ -> evaluateInput sessionId inputText txtConsole this)
+    setViewOnClick eval (\_ -> do
+        expr <- liftM (CharSequence.toString) (inputText.getText)
+        txtConsole.append (expr ++ "\n")
+        sid <- readMVar sessionId
+        res <- evaluateInput sid expr
+        updateView res inputText txtConsole scroller )
     context <- this.getContext
     assetManager <- context.getAssets
     terminalFont <- Typeface.createFromAsset assetManager "fonts/TerminusTTF.ttf"
     txtConsole.setTypeface terminalFont
     return v
 
-evaluateInput :: MVar String -> MutableIO EditText ->
-                 MutableIO TextView -> MutableIO Fragment -> IO ()
-evaluateInput sessionId input console this = do
-    test <- liftM (CharSequence.toString) (input.getText)
-    sid <- readMVar sessionId
-    expr <- liftM (CharSequence.toString) (input.getText)
-    console.append (expr ++ "\n")
+evaluateInput :: String -> String -> IO (MVar String)
+evaluateInput sessionId expr = do
     result <- newEmptyMVar :: IO (MVar String)
-    forkIO (evaluateExpression expr sid >>= putMVar result)
-    res <- takeMVar result
-    activity <- this.getActivity
-    input.setText ""
-    update <- Runnable.new (console.append (res ++ "\nfrege> "))
-    activity.runOnUiThread update
+    forkIO (evaluateExpression expr sessionId >>= putMVar result)
+    return result
+
+updateView :: MVar String -> MutableIO EditText -> MutableIO TextView -> MutableIO ScrollView -> IO ()
+updateView s et tv sv = do
+    res <- takeMVar s
+    et.setText ""
+    update <- Runnable.new (tv.append (res ++ "\nfrege> ") >> tv.invalidate >> tv.requestLayout >> sv.invalidate >> sv.requestLayout >> sv.fullScroll View.focusDown )
+    tv.post update

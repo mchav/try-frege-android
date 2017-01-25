@@ -7,7 +7,6 @@ import io.github.mchav.tryfrege.Utilities
 getSessionID :: IO String
 getSessionID = do
     let emptyReq = "http://try.frege-lang.org/eval?cmd=&stdin="
-    _ <- Log.i "TryFrege" emptyReq
     url <- URL.new emptyReq
     conn <- url.openConnection
     client <- (toHttpURLConnection conn >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO HttpURLConnection)
@@ -18,7 +17,6 @@ getSessionID = do
     fields <- client.getHeaderFields
     Just vals <- fields.get "Set-Cookie"
     Just sid <- vals.get 0
-    _ <- Log.i "TryFrege" "Got session id"
     return (extractSession sid)
 
 extractSession :: String -> String
@@ -56,5 +54,3 @@ getNodeString nlist i = do
     case item of
         Just node -> liftM (String.trim) node.getTextContent
         Nothing   -> return ""
-
-

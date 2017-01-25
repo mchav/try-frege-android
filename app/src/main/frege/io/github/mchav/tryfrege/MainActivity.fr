@@ -5,9 +5,11 @@ import froid.content.Intent
 import froid.support.v4.app.Fragment
 import froid.support.v4.app.FragmentManager
 import froid.support.v4.app.FragmentPagerAdapter
+import froid.support.v4.app.FragmentTransaction
 import froid.support.v7.app.AppCompatActivity
 import froid.os.AsyncTask
 import froid.os.Bundle
+import froid.util.Log
 import froid.view.View
 import froid.widget.TextView
 import froid.support.v4.view.ViewPager
@@ -18,6 +20,7 @@ import io.github.mchav.tryfrege.Net
 import io.github.mchav.tryfrege.Utilities
 
 import Control.Concurrent
+import Java.Util
 
 native module type AppCompatActivity where {}
 
@@ -27,6 +30,7 @@ onCreate this bundle = do
     sessionId <- newEmptyMVar :: IO (MVar String)
     forkIO (getSessionID >>= putMVar sessionId)
     fm <- this.getSupportFragmentManager
+    removeAllFragments fm
     actionBar <- this.getSupportActionBar
     actionBar.setLogo tryFregeLogo
     actionBar.setDisplayShowHomeEnabled True
@@ -36,9 +40,37 @@ onCreate this bundle = do
     viewPager.setAdapter tfp
     viewPager.setCurrentItem 0
 
-onPostExecute :: MVar String -> String -> IO ()
-onPostExecute session res = do
-     putMVar session res
+removeAllFragments :: MutableIO FragmentManager -> IO ()
+removeAllFragments fm = do
+    list <- fm.getFragments
+    case list of
+        Nothing -> return ()
+        Just l  -> removeAllFromList fm l
+
+removeAllFromList :: MutableIO FragmentManager -> MutableIO (List (MutableIO Fragment)) -> IO ()
+removeAllFromList fm list = do
+    size <- list.size
+    mapM_ (getAndRemove fm list) [0..(size - 1)]
+
+getAndRemove :: MutableIO FragmentManager -> MutableIO (List (MutableIO Fragment)) -> Int -> IO ()
+getAndRemove fm list i = do
+    maybeFragment <- list.get i
+    removeFragment fm maybeFragment
+
+numFragments :: MutableIO FragmentManager -> IO Int
+numFragments fm = do
+    list <- fm.getFragments
+    case list of
+        Nothing -> return 0
+        Just l  -> l.size >>= return
+
+removeFragment :: MutableIO FragmentManager -> Maybe (MutableIO Fragment) -> IO ()
+removeFragment fm frag = do
+    case frag of
+        Nothing -> return ()
+        Just f  -> do
+            transaction <- fm.beginTransaction
+            transaction.remove f >>= _.commitNow >> return ()
 
 newTryFregePager :: MutableIO FragmentManager ->  MVar String ->
                     MutableIO ViewPager -> STMutable RealWorld FragmentPagerAdapter
@@ -57,6 +89,3 @@ getPageTitle position =
     case position of
         0 -> return (CharSequence.fromString "Console")
         1 -> return (CharSequence.fromString "Editor")
-
--- async task
-

@@ -3,6 +3,10 @@ module io.github.mchav.tryfrege.EditorFragment where
 import froid.os.Bundle
 import froid.support.v4.app.Fragment
 import froid.view.LayoutInflater
+import froid.text.Editable
+import froid.text.Spannable
+import froid.text.TextWatcher
+import froid.text.style.ForegroundColorSpan
 import froid.view.View
 import froid.view.ViewGroup
 import froid.support.v4.view.ViewPager
@@ -26,6 +30,8 @@ onCreateView sessionId viewPager this inf vg b = do
     v <- inf.inflate fragmentEditor vg False
     otherView <- inf.inflate fragmentConsole vg False
     editor <- asLineNumberEditText v.findViewById codeEditor
+    --let delegator = defaultTextWatcherDelegator.{ afterTextChanged = Just afterTextChanged }
+    --setOnEditTextChanged editor delegator
     fab <- v.findViewById compileFab
     setViewOnClick fab (\v -> evaluateInput sessionId viewPager editor )
     return v
@@ -38,3 +44,16 @@ evaluateInput sessionId viewPager input = do
     forkIO (evaluateExpression expr sid >>= putMVar result)
     res <- takeMVar result
     viewPager.setCurrentItem 0
+
+-- for syntax highlighting
+
+{-
+afterTextChanged :: MutableIO Editable -> IO ()
+afterTextChanged e = do
+    str <- e.toString
+    let lastIndex  = str.indexOf ' '
+    let firstIndex =
+    cyan <- ForegroundColorSpan.new (-12303292)
+    let ret = if idx >= 0 then highlightText else return ()
+    ret
+-}
