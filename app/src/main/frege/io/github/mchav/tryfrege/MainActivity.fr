@@ -56,16 +56,6 @@ getAndRemove :: MutableIO FragmentManager -> MutableIO (List (MutableIO Fragment
 getAndRemove fm list i = do
     maybeFragment <- list.get i
     removeFragment fm maybeFragment
-
-numFragments :: MutableIO FragmentManager -> IO Int
-numFragments fm = do
-    list <- fm.getFragments
-    case list of
-        Nothing -> return 0
-        Just l  -> l.size >>= return
-
-removeFragment :: MutableIO FragmentManager -> Maybe (MutableIO Fragment) -> IO ()
-removeFragment fm frag = do
     case frag of
         Nothing -> return ()
         Just f  -> do
