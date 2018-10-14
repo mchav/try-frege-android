@@ -1,12 +1,12 @@
 module io.github.mchav.tryfrege.EditorFragment where
 
+import froid.content.Context
 import froid.os.Bundle
 import froid.support.v4.app.Fragment
+import froid.support.v7.app.AppCompatActivity
 import froid.view.LayoutInflater
 import froid.text.Editable
-import froid.text.Spannable
 import froid.text.TextWatcher
-import froid.text.style.ForegroundColorSpan
 import froid.view.View
 import froid.view.ViewGroup
 import froid.support.v4.view.ViewPager
@@ -19,41 +19,38 @@ import Control.Concurrent
 import io.github.mchav.tryfrege.Net
 import io.github.mchav.tryfrege.Utilities
 
-newEditorFragment :: MVar String -> MutableIO ViewPager -> STMutable RealWorld Fragment
-newEditorFragment sessionId viewPager = do
-    let delegator = defaultFragmentDelegator.{ onCreateView = Just (onCreateView sessionId viewPager) }
+newEditorFragment :: MVar String -> MutableIO ViewPager -> MutableIO AppCompatActivity -> STMutable RealWorld Fragment
+newEditorFragment sessionId viewPager activity = do
+    let delegator = defaultFragmentDelegator.{ onCreateView = Just (onCreateView sessionId viewPager activity) }
     mkFragment delegator
 
-onCreateView :: MVar String -> MutableIO ViewPager -> MutableIO Fragment -> MutableIO LayoutInflater ->
+onCreateView :: MVar String -> MutableIO ViewPager -> MutableIO AppCompatActivity -> MutableIO Fragment -> MutableIO LayoutInflater ->
                 MutableIO ViewGroup -> Maybe (MutableIO Bundle) -> IO (MutableIO View)
-onCreateView sessionId viewPager this inf vg b = do
+onCreateView sessionId viewPager activity this inf vg b = do
     v <- inf.inflate fragmentEditor vg False
     otherView <- inf.inflate fragmentConsole vg False
     editor <- asLineNumberEditText v.findViewById codeEditor
     --let delegator = defaultTextWatcherDelegator.{ afterTextChanged = Just afterTextChanged }
     --setOnEditTextChanged editor delegator
     fab <- v.findViewById compileFab
-    setViewOnClick fab (\v -> evaluateInput sessionId viewPager editor )
+    setViewOnClick fab (\v -> evaluateInput sessionId viewPager activity editor )
     return v
 
-evaluateInput :: MVar String -> MutableIO ViewPager -> MutableIO LineNumberEditText -> IO ()
-evaluateInput sessionId viewPager input = do
+evaluateInput :: MVar String -> MutableIO ViewPager -> MutableIO AppCompatActivity -> MutableIO LineNumberEditText -> IO ()
+evaluateInput sessionId viewPager activity input = do
     sid <- readMVar sessionId
     expr <- liftM (CharSequence.toString) (input.getText)
     result <- newEmptyMVar :: IO (MVar String)
     forkIO (evaluateExpression expr sid >>= putMVar result)
     res <- takeMVar result
-    viewPager.setCurrentItem 0
+    case res.startsWith "E " of -- see if there is an error.
+        True  -> alertError activity res
+        False -> viewPager.setCurrentItem 0
 
--- for syntax highlighting
-
-{-
-afterTextChanged :: MutableIO Editable -> IO ()
-afterTextChanged e = do
-    str <- e.toString
-    let lastIndex  = str.indexOf ' '
-    let firstIndex =
-    cyan <- ForegroundColorSpan.new (-12303292)
-    let ret = if idx >= 0 then highlightText else return ()
-    ret
--}
+alertError :: MutableIO AppCompatActivity -> String -> IO ()
+alertError context err = do
+  d <- AlertDialogBuilder.new context
+  dialog <- d.create
+  dialog.setTitle "Error"
+  dialog.setMessage err
+  dialog.show

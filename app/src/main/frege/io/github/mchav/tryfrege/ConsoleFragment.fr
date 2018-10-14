@@ -53,5 +53,5 @@ updateView :: MVar String -> MutableIO EditText -> MutableIO TextView -> Mutable
 updateView s et tv sv = do
     res <- takeMVar s
     et.setText ""
-    update <- Runnable.new (tv.append (res ++ "\nfrege> ") >> tv.invalidate >> tv.requestLayout >> sv.invalidate >> sv.requestLayout >> sv.fullScroll View.focusDown )
+    update <- Runnable.new (tv.append (res ++ "\nfrege> ") )-- >> tv.invalidate >> tv.requestLayout >> sv.invalidate >> sv.requestLayout >> sv.fullScroll View.focusDown )
     tv.post update

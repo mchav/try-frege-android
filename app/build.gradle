@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "25.0.1"
+    compileSdkVersion 27
+    buildToolsVersion "27.0.3"
     defaultConfig {
         applicationId "io.github.mchav.tryfrege"
         minSdkVersion 15
@@ -39,69 +39,78 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:24.2.1'
-    compile 'com.android.support:design:24.2.1'
-    testCompile 'junit:junit:4.12'
+    implementation 'com.android.support:appcompat-v7:24.2.1'
+    implementation 'com.android.support:design:24.2.1'
+    testImplementation 'junit:junit:4.12'
 }
 
 project.afterEvaluate {
-    extensions.compileFrege = {
+    extensions.implementationFrege = {
         description = 'Compile Frege to Java'
         javaexec {
-            /* def fregeCompiler = "C:\\Users\\mscha\\Frege\\frege-3.24.100.1-jdk7.jar"
-             classpath += files(fregeCompiler) */
+            android.dexOptions.setJavaMaxHeapSize("4g")
+            android.defaultConfig.setMultiDexEnabled(true)
 
-            configurations.compile.resolve().each {
-                classpath += files(it.toString())
+            def libs = project.rootDir.path +  "/app/libs".replace('/' as char, File.separatorChar)
+
+            def froid = new File(libs + "/froid.jar".replace('/' as char, File.separatorChar))
+            if (!froid.exists()) {
+                new URL("https://github.com/mchav/froid/releases/download/v0.0.2/froid_0.0.2.jar")
+                        .withInputStream{ i ->
+                    froid.withOutputStream{ it << i }
+                }
             }
+//            def froid_support = new File(libs + "/froid-support.jar".replace('/' as char, File.separatorChar))
+//            if (!froid_support.exists()) {
+//                new URL("https://github.com/mchav/froid-support/releases/download/v0.0.1/froid-support_0.0.1.jar")
+//                        .withInputStream{ i ->
+//                    froid_support.withOutputStream{ it << i }
+//                }
+//            }
+            def frege = new File(libs + "/frege-3.24.100.1-jdk7.jar".replace('/' as char, File.separatorChar))
+            if (!frege.exists()) {
+                new URL("https://github.com/mchav/GeoQuiz-Frege/blob/master/app/libs/frege-3.24.100.1-jdk7.jar?raw=true")
+                        .withInputStream{ i ->
+                    frege.withOutputStream{ it << i }
+                }
+            }
+
+            def frege_src = new File(project.rootDir.path +  "/app/src/main/frege".replace('/' as char, File.separatorChar))
+            frege_src.mkdirs()
+
+            android.sourceSets.getByName("main").java.setSrcDirs([frege_src] + android.sourceSets.getByName("main").java.getSrcDirs())
 
             main = 'frege.compiler.Main'
-            // list of all aar dependencies
-            def rootDir = project.rootDir
-            def localProperties = new File(rootDir, "local.properties")
-            def androidJarPath = ""
-            if (localProperties.exists()) {
-                Properties properties = new Properties()
-                localProperties.withInputStream { instr ->
-                    properties.load(instr)
-                }
-                def sdkDir = properties.getProperty('sdk.dir')
-                androidJarPath = sdkDir +
-                        String.format("/platforms/%s/android.jar",
-                                android.compileSdkVersion).replace('/' as char, File.separatorChar)
-            }
 
-            // 'mockAndroidJar' for compilation
-            classpath += files(androidJarPath)
+            def androidJarPath = android.bootClasspath[0].path
             def list = [androidJarPath]
-            def applicationId = (android.defaultConfig.applicationId + ".").replace('.' as char, File.separatorChar)
-            def dir = new File(rootProject.projectDir.path +
-                    "/app/build/intermediates/exploded-aar/com.android.support/".replace('/' as char, File.separatorChar))
-            dir.eachFileRecurse (groovy.io.FileType.FILES) { file ->
-                if (file.path.endsWith(".jar")) {
-                    list << file.path
-                    classpath += files(file.path)
+            classpath += files(androidJarPath)
+
+            android.applicationVariants.each { variant ->
+                variant.getCompileClasspath(null).each { path ->
+                    list << path
+                    classpath += files(path)
                 }
             }
 
-            def appPath = "src/main/frege/".replace('/' as char, File.separatorChar) + applicationId
+            def appPath = "src/main/frege/".replace('/' as char, File.separatorChar)
             def a = ['-j', '-target', '1.7', '-v', '-inline', '-O', '-d', 'src/main/java', '-make',
-                     '-fp', list.join(';'),
+                     '-fp', list.join(File.pathSeparator),
                      '-sp', appPath, appPath ]
-            println 'Frege compiler args: "' + a.join(' ') + '"'
+            project.logger.debug('Frege compiler args: "' + a.join(' ') + '"')
             args (*a)
         }
     }
-
     try {
-        // compileFrege()
+        implementationFrege()
     } catch (Exception e) {
         // all error handling is shown on the gradle console.
-        System.err << "Frege compilation failed."
+        System.err << "Frege implementation failed.\n"
+        System.err << e.toString() + "\n"
     }
 }
 

@@ -30,49 +30,27 @@ onCreate this bundle = do
     sessionId <- newEmptyMVar :: IO (MVar String)
     forkIO (getSessionID >>= putMVar sessionId)
     fm <- this.getSupportFragmentManager
-    removeAllFragments fm
     actionBar <- this.getSupportActionBar
     actionBar.setLogo tryFregeLogo
     actionBar.setDisplayShowHomeEnabled True
     actionBar.setDisplayUseLogoEnabled True
     viewPager <- asViewPager this.findViewById tryFregePagerId
-    tfp <- newTryFregePager fm sessionId viewPager
+    tfp <- newTryFregePager fm sessionId viewPager this
     viewPager.setAdapter tfp
     viewPager.setCurrentItem 0
 
-removeAllFragments :: MutableIO FragmentManager -> IO ()
-removeAllFragments fm = do
-    list <- fm.getFragments
-    case list of
-        Nothing -> return ()
-        Just l  -> removeAllFromList fm l
-
-removeAllFromList :: MutableIO FragmentManager -> MutableIO (List (MutableIO Fragment)) -> IO ()
-removeAllFromList fm list = do
-    size <- list.size
-    mapM_ (getAndRemove fm list) [0..(size - 1)]
-
-getAndRemove :: MutableIO FragmentManager -> MutableIO (List (MutableIO Fragment)) -> Int -> IO ()
-getAndRemove fm list i = do
-    maybeFragment <- list.get i
-    removeFragment fm maybeFragment
-    case frag of
-        Nothing -> return ()
-        Just f  -> do
-            transaction <- fm.beginTransaction
-            transaction.remove f >>= _.commitNow >> return ()
-
 newTryFregePager :: MutableIO FragmentManager ->  MVar String ->
-                    MutableIO ViewPager -> STMutable RealWorld FragmentPagerAdapter
-newTryFregePager fm sessionId viewPager = do
-    let delegator = FragmentPagerAdapterDelegator { getItem = Just (getItem sessionId viewPager), getCount = Just (\_ -> return 2), getPageTitle = Just (\_ -> getPageTitle) }
+                    MutableIO ViewPager -> MutableIO AppCompatActivity ->
+                    STMutable RealWorld FragmentPagerAdapter
+newTryFregePager fm sessionId viewPager activity = do
+    let delegator = FragmentPagerAdapterDelegator { getItem = Just (getItem sessionId viewPager activity), getCount = Just (\_ -> return 2), getPageTitle = Just (\_ -> getPageTitle) }
     mkFragmentPagerAdapter delegator fm
 
-getItem :: MVar String -> MutableIO ViewPager -> MutableIO FragmentPagerAdapter -> Int -> IOMutable Fragment
-getItem sessionId viewPager this position =
+getItem :: MVar String -> MutableIO ViewPager -> MutableIO AppCompatActivity -> MutableIO FragmentPagerAdapter -> Int -> IOMutable Fragment
+getItem sessionId viewPager activity this position =
     case position of
         0 -> (C.newConsoleFragment sessionId) >>= return
-        1 -> (E.newEditorFragment sessionId viewPager) >>= return
+        1 -> (E.newEditorFragment sessionId viewPager activity) >>= return
 
 getPageTitle :: Int -> IO CharSequence
 getPageTitle position =

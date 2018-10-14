@@ -3,6 +3,7 @@ module io.github.mchav.tryfrege.Utilities where
 import Control.Concurrent
 import Java.Util
 
+import froid.content.Context
 import froid.Types
 
 -- resources
@@ -88,3 +89,12 @@ readMVar var = do
     val <- takeMVar var
     putMVar var val
     return val
+
+data AlertDialogBuilder = native android.app.AlertDialog.Builder where
+    native new :: MutableIO Context -> IOMutable AlertDialogBuilder
+    native create :: MutableIO AlertDialogBuilder -> IOMutable AlertDialog
+
+data AlertDialog = native android.app.AlertDialog where
+    native setTitle :: MutableIO AlertDialog -> String -> IO ()
+    native setMessage :: MutableIO AlertDialog -> String -> IO ()
+    native show :: MutableIO AlertDialog -> IO ()
