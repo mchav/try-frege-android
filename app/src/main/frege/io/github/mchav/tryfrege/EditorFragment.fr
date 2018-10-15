@@ -30,14 +30,15 @@ onCreateView sessionId viewPager activity this inf vg b = do
     v <- inf.inflate fragmentEditor vg False
     otherView <- inf.inflate fragmentConsole vg False
     editor <- asLineNumberEditText v.findViewById codeEditor
-    --let delegator = defaultTextWatcherDelegator.{ afterTextChanged = Just afterTextChanged }
-    --setOnEditTextChanged editor delegator
     fab <- v.findViewById compileFab
     setViewOnClick fab (\v -> evaluateInput sessionId viewPager activity editor )
     return v
 
 evaluateInput :: MVar String -> MutableIO ViewPager -> MutableIO AppCompatActivity -> MutableIO LineNumberEditText -> IO ()
 evaluateInput sessionId viewPager activity input = do
+    -- on evaluating console output create a new session so as not to pollute the old one.
+    _ <- takeMVar sessionId
+    forkIO (getSessionID >>= putMVar sessionId)
     sid <- readMVar sessionId
     expr <- liftM (CharSequence.toString) (input.getText)
     result <- newEmptyMVar :: IO (MVar String)
